@@ -9,7 +9,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
+  Button
 } from '@mui/material';
 import axios from 'axios';
 import './App.css'
@@ -17,13 +23,32 @@ import './App.css'
 function App() {
   const [payload, setPayload] = useState(null);
   const [lyrics, setLyrics] = useState('');
+  const [error, setError] = useState(false);
+  const [contentError, setContentError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleReset = () => {
     setPayload(null);
+    setLyrics('');
   }
   const handleGenerate = async() => {
+    if(lyrics === '') {
+      setError(true);
+      return
+    }
+    setIsLoading(true)
     const response = await axios.post('https://jup5yqkhzv6qco67gvzysyd7fq0eiyiw.lambda-url.us-west-1.on.aws/', {lyrics});
-    console.log(response)
+    const data = response["data"];
+    if ('content_filter' === data["finish_reason"]){
+      setContentError(true);
+      setIsLoading(false)
+      return
+    }
+    setPayload(JSON.parse(data["lyrics_string_json"]));
+    setIsLoading(false)
+  }
+  const handleDialogClose = () => {
+    setContentError(false)
   }
   return (
     <>
@@ -62,13 +87,14 @@ function App() {
               placeholder='Enter Lyrics Here 🎶'
               value={lyrics}
               onChange={(e) => setLyrics(e.currentTarget.value)}
+              error={error}
             />  
           </Box>
           <Typography 
             variant='h2' 
             color='whitesmoke' 
             align='center'
-            onClick={handleGenerate}
+            onClick={isLoading ? () => {} : handleGenerate}
             sx={{
               backgroundColor: '#0067c1',
               borderRadius: '5px',
@@ -80,7 +106,7 @@ function App() {
               }
             }}
           >
-            Generate
+            {isLoading ? 'Loading...' : 'Generate'}
           </Typography>  
         </div>
       }
@@ -101,8 +127,9 @@ function App() {
             <Typography 
               variant='h5'
               onClick={handleReset}
+              color='whitesmoke' 
               sx={{
-                backgroundColor: '#cd9300',
+                backgroundColor: '#0067c1',
                 width: '100px',
                 borderRadius: '5px',
                 display: 'flex',
@@ -112,7 +139,7 @@ function App() {
                 cursor: 'pointer',
                 mb: '10px',
                 '&:hover': {
-                  backgroundColor: '#bb8600'
+                  backgroundColor: '#005bab'
                 }
               }}
             >
@@ -152,6 +179,55 @@ function App() {
           </TableContainer>  
         </div>
       }
+      <Dialog
+        open={contentError}
+        onClose={handleDialogClose}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: '#e3e3e3'
+          }}
+        >
+          Open AI's Content Filter Activated
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            backgroundColor: '#e3e3e3'
+          }}
+        >
+          <DialogContentText 
+            color='#303030'
+            sx={{
+              pt: '15px'
+            }}
+          >
+            The lyrics entered violate Open AI's terms of service.
+          </DialogContentText>
+          <DialogContentText color='#303030'>
+            Please modify or enter new lyrics. 
+          </DialogContentText>
+          <DialogContentText color='#303030'>
+            Learn more 
+              <a 
+                href='https://platform.openai.com/docs/guides/moderation/overview' 
+                target="_blank"
+                style={{
+                  textDecoration: 'none',
+                  paddingLeft: '5px'
+                }}
+              >
+                here
+              </a>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            backgroundColor: '#e3e3e3'
+          }}
+        >
+          <Button onClick={handleDialogClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }
