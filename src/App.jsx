@@ -44,6 +44,11 @@ function App() {
       setIsLoading(false)
       return
     }
+    if ('length' === data["finish_reason"]){
+      setContentError(true);
+      setIsLoading(false)
+      return
+    }
     setPayload(JSON.parse(data["lyrics_string_json"]));
     setIsLoading(false)
   }
@@ -88,7 +93,7 @@ function App() {
               value={lyrics}
               onChange={(e) => setLyrics(e.currentTarget.value)}
               error={error}
-            />  
+            />
           </Box>
           <Typography 
             variant='h2' 
